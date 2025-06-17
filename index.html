@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Cidade Cinza</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Página de Entrada -->
+        <div id="entry-page">
+            <div class="header">
+                <h1>Quiz Cidade Cinza</h1>
+                <p>Questionário sobre o documentário "Cidade Cinza"</p>
+            </div>
+            
+            <form id="student-form">
+                <div class="form-group">
+                    <label for="student-name">Nome do Aluno:</label>
+                    <input type="text" id="student-name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="student-class">Turma:</label>
+                    <select id="student-class" name="class" required>
+                        <option value="">Selecione sua turma</option>
+                        <optgroup label="E.E. Antônio Carlos">
+                            <option value="1º EM REG 1">1º EM REG 1</option>
+                            <option value="1º EM REG 2">1º EM REG 2</option>
+                            <option value="1º EM REG 3">1º EM REG 3</option>
+                            <option value="1º EM REG 4">1º EM REG 4</option>
+                            <option value="2º EM REG 1">2º EM REG 1</option>
+                            <option value="2º EM REG 2">2º EM REG 2</option>
+                            <option value="2º EM REG 3">2º EM REG 3</option>
+                            <option value="2º EM REG 4">2º EM REG 4</option>
+                            <option value="3º EM REG 1">3º EM REG 1</option>
+                            <option value="3º EM REG 2">3º EM REG 2</option>
+                            <option value="3º EM REG 3">3º EM REG 3</option>
+                            <option value="3º EM REG 4">3º EM REG 4</option>
+                        </optgroup>
+                        <optgroup label="E.E. José Freire">
+                            <option value="1º EM REG 4">1º EM REG 4</option>
+                            <option value="1º EM EJA 1">1º EM EJA 1</option>
+                            <option value="2º EM REG 1">2º EM REG 1</option>
+                            <option value="2º EM REG 4">2º EM REG 4</option>
+                            <option value="2º EM EJA 1">2º EM EJA 1</option>
+                            <option value="3º EM REG 1">3º EM REG 1</option>
+                            <option value="3º EM REG 2">3º EM REG 2</option>
+                            <option value="3º EM REG 4">3º EM REG 4</option>
+                            <option value="3º EM REG 5">3º EM REG 5</option>
+                            <option value="3º EM EJA 1">3º EM EJA 1</option>
+                        </optgroup>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="student-date">Data:</label>
+                    <input type="date" id="student-date" name="date" required>
+                </div>
+                
+                <button type="submit" class="btn">Iniciar Quiz</button>
+            </form>
+        </div>
+
+        <!-- Página do Quiz -->
+        <div id="quiz-page" class="quiz-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            
+            <div id="quiz-content"></div>
+            
+            <div class="navigation">
+                <button type="button" class="btn-secondary" id="prev-btn" onclick="previousQuestion()" style="display: none;">Anterior</button>
+                <button type="button" class="btn" id="next-btn" onclick="nextQuestion()">Próxima</button>
+                <button type="button" class="btn" id="submit-btn" onclick="submitQuiz()" style="display: none;">Finalizar Quiz</button>
+            </div>
+        </div>
+
+        <!-- Página de Resultado -->
+        <div id="result-page" class="result-container">
+            <div class="header">
+                <h1>Quiz Finalizado!</h1>
+                <p>Obrigado por participar</p>
+            </div>
+            
+            <div class="score" id="final-score">-</div>
+            <p id="score-details">-</p>
+            
+            <button type="button" class="btn" onclick="restartQuiz()">Fazer Novamente</button>
+        </div>    <script src="js/script.js"></script>
+</body>
+</html>
+
