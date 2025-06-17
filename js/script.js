@@ -3,7 +3,7 @@ const API_CONFIG = {
     // Para desenvolvimento local
     development: 'http://localhost:5000',
     // Para produção - substitua pela URL do seu backend hospedado
-    production: 'https://asgdestroi.github.io/cidadecinzafront/'
+    production: 'https://cidadecinzabackend.onrender.com'
 };
 
 // Detectar ambiente baseado no hostname
