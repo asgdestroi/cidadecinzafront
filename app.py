@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 from flask_cors import CORS
 import json
 import os
@@ -7,13 +7,16 @@ from datetime import datetime
 import csv
 import io
 
+# Import student_results functions
+from student_results import load_results, save_results
+
 app = Flask(__name__)
 CORS(app, origins="*")  # Permitir CORS de qualquer origem
 
 # Configurações
 TEACHER_PASSWORD = "Profandre123"
 
-# Dados do quiz
+# Dados do quiz (mantido aqui por enquanto, mas pode ser movido para quiz_data.py)
 quiz_data = [
     {
         "id": 1,
@@ -53,7 +56,7 @@ quiz_data = [
     },
     {
         "id": 4,
-        "question": "Como \"Cidade Cinza\" retrata a relação entre os artistas urbanos e o poder público municipal?",
+        "question": "Como \"Cidade Cinza\" retrata a relação entre os artistas urbanos e o poder público municipal? ",
         "options": [
             "Mostra uma cooperação constante e harmoniosa entre as partes",
             "Revela um cenário de conflito com períodos de repressão, mas também momentos de reconhecimento oficial",
@@ -95,7 +98,7 @@ quiz_data = [
             "Veem como a única forma legítima de valorização do grafite",
             "Acreditam que o mercado nunca realmente aceitou o grafite como arte",
             "Não fazem distinção entre grafite e pixo no contexto mercadológico",
-            "Avaliam que o pixo tem maior valor comercial que o grafite"
+            "Avaliam que o pixo tem maior valor comercial que o grafite" 
         ],
         "correct_answer": "Consideram que isso representa a perda da essência contestadora original"
     },
@@ -137,23 +140,90 @@ quiz_data = [
     }
 ]
 
-# Arquivo para armazenar resultados
-RESULTS_FILE = 'student_results.json'
+def calculate_question_accuracy_by_class(all_results, quiz_data):
+    """
+    Calcula o índice de acerto por questão para cada turma.
+    Retorna um dicionário onde a chave é o nome da turma e o valor é outro dicionário
+    com o ID da questão como chave e a porcentagem de acerto como valor.
+    """
+    class_question_stats = {} # { 'Turma A': { 'q1_id': { 'correct': 0, 'total': 0 }, ... }, ... }
 
-def load_results():
-    """Carregar resultados existentes do arquivo"""
-    if os.path.exists(RESULTS_FILE):
-        try:
-            with open(RESULTS_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            return []
-    return []
+    # Initialize stats for all questions for all potential classes
+    all_class_names = sorted(list(set([r.get('class') for r in all_results if r.get('class')])))
 
-def save_results(results):
-    """Salvar resultados no arquivo"""
-    with open(RESULTS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(results, f, ensure_ascii=False, indent=2)
+    for class_name in all_class_names:
+        class_question_stats[class_name] = {}
+        for q in quiz_data:
+            class_question_stats[class_name][str(q['id'])] = {'correct': 0, 'total': 0}
+
+    for result in all_results:
+        class_name = result.get('class')
+        if not class_name:
+            continue
+
+        # Use 'answers_details' if available, otherwise try to parse 'answers' (legacy)
+        answers_to_process = result.get('answers_details')
+        if not answers_to_process:
+            # Fallback for older entries that might not have 'answers_details'
+            # This parsing is less robust if question options were randomized at submission
+            # For this reason, it's better to re-submit quizzes if possible after this change.
+            student_answers_str = result.get('answers', '') # e.g., "1.a, 2.c, 3.b"
+            student_answers_parsed = {}
+            for qa_pair in student_answers_str.split(', '):
+                if '.' in qa_pair:
+                    q_id, ans_letter = qa_pair.split('.', 1)
+                    student_answers_parsed[q_id] = ans_letter
+            
+            # Reconstruct answers_to_process for legacy entries
+            answers_to_process = []
+            for question in quiz_data:
+                q_id = str(question['id'])
+                if q_id in student_answers_parsed:
+                    # This part is tricky: we need the *text* of the answer, not just the letter.
+                    # If the options were randomized, 'a' might mean different things.
+                    # For simplicity, we'll try to map the letter to the current quiz_data options.
+                    # This is a potential source of inaccuracy for old data.
+                    student_answer_letter = student_answers_parsed[q_id]
+                    student_answer_text_from_letter = ''
+                    try:
+                        # Map letter back to option text using current quiz_data options
+                        option_index = ord(student_answer_letter) - ord('a')
+                        if 0 <= option_index < len(question['options']):
+                            student_answer_text_from_letter = question['options'][option_index]
+                    except (ValueError, TypeError):
+                        pass # Handle cases where letter is not 'a'-'e' or option_index is out of bounds
+
+                    answers_to_process.append({
+                        'question_id': q_id,
+                        'student_answer': student_answer_text_from_letter,
+                        'correct_answer': question['correct_answer'],
+                        'is_correct': (student_answer_text_from_letter == question['correct_answer'])
+                    })
+        
+        if not answers_to_process: # Skip if no valid answers to process
+            continue
+
+        for answer_detail in answers_to_process:
+            q_id = str(answer_detail['question_id'])
+            is_correct = answer_detail['is_correct'] # Use the stored 'is_correct' if available
+
+            if q_id in class_question_stats[class_name]:
+                class_question_stats[class_name][q_id]['total'] += 1
+                if is_correct:
+                    class_question_stats[class_name][q_id]['correct'] += 1
+
+    # Calculate percentages
+    accuracy_by_class = {}
+    for class_name, q_stats in class_question_stats.items():
+        accuracy_by_class[class_name] = {}
+        for q_id, stats in q_stats.items():
+            if stats['total'] > 0:
+                accuracy = (stats['correct'] / stats['total']) * 100
+                accuracy_by_class[class_name][q_id] = round(accuracy, 2)
+            else:
+                accuracy_by_class[class_name][q_id] = 0.0 # No attempts for this question in this class
+
+    return accuracy_by_class
 
 @app.route('/api/quiz', methods=['GET'])
 def get_quiz():
@@ -192,29 +262,27 @@ def submit_quiz():
     student_name = data.get('name', '')
     student_class = data.get('class', '')
     student_date = data.get('date', '')
-    answers = data.get('answers', {})
+    answers = data.get('answers', {}) # This 'answers' is a dict of {question_id: student_answer_text}
     
     # Calcular pontuação
     correct_answers = 0
-    answer_summary = []
+    answers_details = [] # New field to store detailed answer info
     
     for question in quiz_data:
         question_id = str(question['id'])
-        student_answer = answers.get(question_id, '')
-        correct_answer = question['correct_answer']
+        student_answer_text = answers.get(question_id, '')
+        correct_answer_text = question['correct_answer']
         
-        is_correct = student_answer == correct_answer
+        is_correct = (student_answer_text == correct_answer_text)
         if is_correct:
             correct_answers += 1
         
-        # Encontrar a letra da opção (a, b, c, d, e)
-        option_letter = ''
-        for i, option in enumerate(question['options']):
-            if option == student_answer:
-                option_letter = chr(ord('a') + i)
-                break
-        
-        answer_summary.append(f"{question['id']}.{option_letter}")
+        answers_details.append({
+            'question_id': question_id,
+            'student_answer': student_answer_text,
+            'correct_answer': correct_answer_text,
+            'is_correct': is_correct
+        })
     
     # Calcular nota final (0-10)
     final_score = round((correct_answers / len(quiz_data)) * 10, 1)
@@ -225,7 +293,7 @@ def submit_quiz():
         'class': student_class,
         'date': student_date,
         'submission_time': datetime.now().isoformat(),
-        'answers': ', '.join(answer_summary),
+        'answers_details': answers_details, # Store detailed answers
         'score': final_score,
         'correct_answers': correct_answers,
         'total_questions': len(quiz_data)
@@ -256,18 +324,33 @@ def teacher_login():
 
 @app.route('/api/teacher/results', methods=['GET'])
 def get_teacher_results():
-    """Obter resultados para o professor"""
+    """Obter resultados para o professor, agrupados por escola e turma"""
     results = load_results()
     
-    # Agrupar por turma
-    results_by_class = {}
+    # Agrupar por escola e depois por turma
+    results_by_school_and_class = {}
     for result in results:
-        class_name = result['class']
-        if class_name not in results_by_class:
-            results_by_class[class_name] = []
-        results_by_class[class_name].append(result)
+        class_name = result.get('class', 'Turma Desconhecida')
+        
+        # Tentativa de extrair o nome da escola do nome da turma
+        # Ex: "E.E. Antônio Carlos - 1º EM REG 4" -> "E.E. Antônio Carlos"
+        # Ou "E.E. José Freire - EJA" -> "E.E. José Freire"
+        school_name = "Escola Desconhecida"
+        if "E.E. Antônio Carlos" in class_name:
+            school_name = "E.E. Antônio Carlos"
+        elif "E.E. José Freire" in class_name:
+            school_name = "E.E. José Freire"
+        # Adicione mais regras se houver outras escolas
+
+        if school_name not in results_by_school_and_class:
+            results_by_school_and_class[school_name] = {}
+        
+        if class_name not in results_by_school_and_class[school_name]:
+            results_by_school_and_class[school_name][class_name] = []
+        
+        results_by_school_and_class[school_name][class_name].append(result)
     
-    return jsonify(results_by_class)
+    return jsonify(results_by_school_and_class)
 
 @app.route('/api/teacher/download/<class_name>', methods=['GET'])
 def download_class_results(class_name):
@@ -275,7 +358,7 @@ def download_class_results(class_name):
     results = load_results()
     
     # Filtrar resultados por turma
-    class_results = [r for r in results if r['class'] == class_name]
+    class_results = [r for r in results if r.get('class') == class_name]
     
     if not class_results:
         return jsonify({'error': 'Nenhum resultado encontrado para esta turma'}), 404
@@ -285,20 +368,38 @@ def download_class_results(class_name):
     writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
     
     # Escrever cabeçalho
-    writer.writerow(['Nome', 'Turma', 'Data', 'Respostas', 'Nota', 'Acertos', 'Total de Questões', 'Data/Hora de Submissão'])
+    # Incluir 'is_correct' para cada questão no CSV
+    headers = ['Nome', 'Turma', 'Data', 'Nota', 'Acertos', 'Total de Questões', 'Data/Hora de Submissão']
+    # Add headers for each question's correctness
+    for q in quiz_data:
+        headers.append(f"Q{q['id']} - Correta")
+        headers.append(f"Q{q['id']} - Resposta Aluno")
+        headers.append(f"Q{q['id']} - Resposta Certa")
+
+    writer.writerow(headers)
     
     # Escrever dados
     for result in class_results:
-        writer.writerow([
-            result['name'],
-            result['class'],
-            result['date'],
-            result['answers'],
-            result['score'],
-            result['correct_answers'],
-            result['total_questions'],
-            result['submission_time']
-        ])
+        row = [
+            result.get('name', ''),
+            result.get('class', ''),
+            result.get('date', ''),
+            result.get('score', ''),
+            result.get('correct_answers', ''),
+            result.get('total_questions', ''),
+            result.get('submission_time', '')
+        ]
+        
+        # Add question-specific details
+        answers_details_map = {ad['question_id']: ad for ad in result.get('answers_details', [])}
+        for q in quiz_data:
+            q_id = str(q['id'])
+            detail = answers_details_map.get(q_id, {})
+            row.append('Sim' if detail.get('is_correct') else 'Não')
+            row.append(detail.get('student_answer', ''))
+            row.append(detail.get('correct_answer', ''))
+        
+        writer.writerow(row)
     
     # Criar resposta com codificação adequada
     output.seek(0)
@@ -307,13 +408,63 @@ def download_class_results(class_name):
     # Adicionar BOM para abertura correta no Excel
     csv_content = '\ufeff' + csv_content
     
-    from flask import make_response
     response = make_response(csv_content.encode('utf-8'))
     response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
     response.headers['Content-Disposition'] = f'attachment; filename=resultados_{class_name}.csv'
     
     return response
 
+@app.route('/api/teacher/question_accuracy', methods=['GET'])
+def get_question_accuracy():
+    """
+    Retorna o índice de acerto por questão para cada turma.
+    """
+    all_results = load_results()
+    accuracy_report = calculate_question_accuracy_by_class(all_results, quiz_data)
+    return jsonify(accuracy_report)
+
+@app.route('/api/teacher/download_question_accuracy/<class_name>', methods=['GET'])
+def download_question_accuracy(class_name):
+    """
+    Baixar o índice de acerto por questão de uma turma específica como CSV.
+    """
+    all_results = load_results()
+    accuracy_report = calculate_question_accuracy_by_class(all_results, quiz_data)
+
+    if class_name not in accuracy_report:
+        return jsonify({'error': 'Nenhum relatório de acerto por questão encontrado para esta turma'}), 404
+
+    class_accuracy = accuracy_report[class_name]
+
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+
+    # Headers: Question ID, Question Text, Accuracy (%)
+    headers = ['ID da Questão', 'Questão', 'Acerto (%)']
+    writer.writerow(headers)
+
+    for q in quiz_data:
+        q_id = str(q['id'])
+        accuracy = class_accuracy.get(q_id, 0.0) # Default to 0.0 if no data
+
+        row = [
+            q_id,
+            q['question'],
+            f"{accuracy:.2f}%"
+        ]
+        writer.writerow(row)
+
+    output.seek(0)
+    csv_content = output.getvalue()
+    csv_content = '\ufeff' + csv_content # Add BOM for Excel
+
+    response = make_response(csv_content.encode('utf-8'))
+    response.headers['Content-Type'] = 'text/csv; charset=utf-8-sig'
+    response.headers['Content-Disposition'] = f'attachment; filename=acerto_por_questao_{class_name}.csv'
+
+    return response
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+
 
