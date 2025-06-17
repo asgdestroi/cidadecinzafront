@@ -227,3 +227,165 @@
             }
         }
 
+
+/* Estilos para a Área do Professor */
+.login-container, .dashboard-container {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    padding: 40px;
+    max-width: 1200px;
+    width: 100%;
+}
+
+.dashboard-content {
+    margin-top: 30px;
+}
+
+.school-section {
+    margin-bottom: 40px;
+    padding: 20px;
+    border: 2px solid #e1e5e9;
+    border-radius: 10px;
+    background-color: #f8f9ff;
+}
+
+.school-section h2 {
+    color: #667eea;
+    font-size: 1.8em;
+    margin-bottom: 20px;
+    text-align: center;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 10px;
+}
+
+.class-section {
+    margin-bottom: 30px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: white;
+}
+
+.class-section h3 {
+    color: #333;
+    font-size: 1.4em;
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #667eea;
+    color: white;
+    border-radius: 5px;
+    text-align: center;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+    font-size: 0.9em;
+}
+
+table th, table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+table th {
+    background-color: #f8f9ff;
+    color: #333;
+    font-weight: bold;
+}
+
+table tr:hover {
+    background-color: #f5f5f5;
+}
+
+.btn-small {
+    background: #667eea;
+    color: white;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    margin: 2px;
+}
+
+.btn-small:hover {
+    background: #5a6fd8;
+}
+
+.download-buttons {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.download-buttons .btn-small {
+    margin: 5px;
+    padding: 8px 15px;
+    font-size: 0.9em;
+}
+
+/* Responsividade para a área do professor */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 20px;
+        margin: 10px;
+    }
+    
+    table {
+        font-size: 0.8em;
+    }
+    
+    table th, table td {
+        padding: 8px 5px;
+    }
+    
+    .school-section h2 {
+        font-size: 1.5em;
+    }
+    
+    .class-section h3 {
+        font-size: 1.2em;
+    }
+}
+
+/* Estilos para campos de senha */
+input[type="password"] {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+    background-color: white;
+}
+
+input[type="password"]:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* Melhorias visuais para tabelas grandes */
+.table-container {
+    overflow-x: auto;
+    margin-bottom: 20px;
+}
+
+/* Estilo para alertas/modais simples */
+.alert {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.alert.error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
