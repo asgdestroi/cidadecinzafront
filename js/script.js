@@ -1,7 +1,9 @@
 // Configuração da API
 const API_CONFIG = {
+    // Para desenvolvimento local
     development: 'http://localhost:5000',
-    production: 'https://cidadecinzafront.onrender.com' 
+    // Para produção - substitua pela URL do seu backend hospedado no Render.com
+    production: 'https://cidadecinzafront.onrender.com' // Atualize esta URL com a sua real do Render.com
 };
 
 // Detectar ambiente baseado no hostname
@@ -12,6 +14,55 @@ let quizData = [];
 let currentQuestion = 0;
 let studentAnswers = {};
 let studentInfo = {};
+
+// Elementos das páginas
+const entryPage = document.getElementById('entry-page');
+const quizPage = document.getElementById('quiz-page');
+const resultPage = document.getElementById('result-page');
+const teacherLoginPage = document.getElementById('teacher-login-page');
+const teacherDashboardPage = document.getElementById('teacher-dashboard-page');
+
+// Funções para controlar a visibilidade das páginas
+function showEntryPage() {
+    entryPage.style.display = 'block';
+    quizPage.style.display = 'none';
+    resultPage.style.display = 'none';
+    teacherLoginPage.style.display = 'none';
+    teacherDashboardPage.style.display = 'none';
+}
+
+function showQuizPage() {
+    entryPage.style.display = 'none';
+    quizPage.style.display = 'block';
+    resultPage.style.display = 'none';
+    teacherLoginPage.style.display = 'none';
+    teacherDashboardPage.style.display = 'none';
+}
+
+function showResultPage() {
+    entryPage.style.display = 'none';
+    quizPage.style.display = 'none';
+    resultPage.style.display = 'block';
+    teacherLoginPage.style.display = 'none';
+    teacherDashboardPage.style.display = 'none';
+}
+
+function showTeacherLogin() {
+    entryPage.style.display = 'none';
+    quizPage.style.display = 'none';
+    resultPage.style.display = 'none';
+    teacherLoginPage.style.display = 'block';
+    teacherDashboardPage.style.display = 'none';
+}
+
+function showTeacherDashboard() {
+    entryPage.style.display = 'none';
+    quizPage.style.display = 'none';
+    resultPage.style.display = 'none';
+    teacherLoginPage.style.display = 'none';
+    teacherDashboardPage.style.display = 'block';
+    loadTeacherDashboard(); // Carrega os dados do dashboard ao exibir
+}
 
 // Aguardar carregamento do DOM
 document.addEventListener('DOMContentLoaded', function() {
@@ -30,6 +81,31 @@ document.addEventListener('DOMContentLoaded', function() {
         
         await loadQuiz();
     });
+
+    // Submeter formulário de login do professor
+    document.getElementById("teacher-login-form").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const password = document.getElementById("teacher-password").value;
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/teacher/login`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ password: password })
+            });
+            
+            if (response.ok) {
+                showTeacherDashboard();
+            } else {
+                alert("Senha incorreta!");
+            }
+        } catch (error) {
+            console.error("Erro ao fazer login do professor:", error);
+            alert("Erro ao tentar login. Verifique a conexão com o servidor.");
+        }
+    });
 });
 
 // Carregar quiz do backend
@@ -43,9 +119,7 @@ async function loadQuiz() {
         
         quizData = await response.json();
         
-        document.getElementById("entry-page").style.display = "none";
-        document.getElementById("quiz-page").style.display = "block";
-        
+        showQuizPage();
         displayQuestion();
     } catch (error) {
         console.error("Error loading quiz:", error);
@@ -76,7 +150,7 @@ function displayQuestion() {
     
     // Restaurar resposta se já foi selecionada
     if (studentAnswers[question.id]) {
-        const radio = document.querySelector(`input[value="${studentAnswers[question.id]}"]`);
+        const radio = document.querySelector(`input[name="question_${question.id}"][value="${studentAnswers[question.id]}"]`);
         if (radio) radio.checked = true;
     }
     
@@ -168,9 +242,7 @@ async function submitQuiz() {
 
 // Mostrar resultado
 function showResult(result) {
-    document.getElementById("quiz-page").style.display = "none";
-    document.getElementById("result-page").style.display = "block";
-    
+    showResultPage();
     document.getElementById("final-score").textContent = result.score.toFixed(1);
     document.getElementById("score-details").textContent = `Você acertou ${result.correct_answers} de ${quizData.length} perguntas.`;
 }
@@ -182,18 +254,137 @@ function restartQuiz() {
     studentInfo = {};
     document.getElementById("student-form").reset();
     document.getElementById("student-date").valueAsDate = new Date();
-    document.getElementById("entry-page").style.display = "block";
-    document.getElementById("quiz-page").style.display = "none";
-    document.getElementById("result-page").style.display = "none";
+    showEntryPage();
 }
 
-// Função para a área do professor
-function accessTeacherArea() {
-    const password = prompt("Digite a senha do professor:");
-    if (password === "Profandre123") {
-        window.location.href = "teacher_area.html";
-    } else if (password !== null) {
-        alert("Senha incorreta!");
+// Funções da Área do Professor
+async function loadTeacherDashboard() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/teacher/results`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const resultsBySchoolAndClass = await response.json();
+        displayTeacherResults(resultsBySchoolAndClass);
+    } catch (error) {
+        console.error("Erro ao carregar dashboard do professor:", error);
+        alert("Erro ao carregar dados do professor. Verifique a conexão com o servidor.");
+        showTeacherLogin(); // Volta para o login se houver erro
     }
 }
+
+function displayTeacherResults(resultsBySchoolAndClass) {
+    const dashboardContent = document.getElementById('results-by-school-class');
+    dashboardContent.innerHTML = ''; // Limpa conteúdo anterior
+
+    for (const schoolName in resultsBySchoolAndClass) {
+        const schoolDiv = document.createElement('div');
+        schoolDiv.className = 'school-section';
+        schoolDiv.innerHTML = `<h2>${schoolName}</h2>`;
+        dashboardContent.appendChild(schoolDiv);
+
+        for (const className in resultsBySchoolAndClass[schoolName]) {
+            const classDiv = document.createElement('div');
+            classDiv.className = 'class-section';
+            classDiv.innerHTML = `<h3>${className}</h3>`;
+
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Data</th>
+                        <th>Nota</th>
+                        <th>Acertos</th>
+                        <th>Total</th>
+                        <th>Detalhes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+
+            resultsBySchoolAndClass[schoolName][className].forEach(result => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${result.name}</td>
+                    <td>${result.date}</td>
+                    <td>${result.score.toFixed(1)}</td>
+                    <td>${result.correct_answers}</td>
+                    <td>${result.total_questions}</td>
+                    <td>
+                        <button class="btn-small" onclick="showStudentAnswers('${JSON.stringify(result.answers_details).replace(/'/g, "\\'")}')">Ver Respostas</button>
+                    </td>
+                `;
+            });
+            classDiv.appendChild(table);
+
+            // Botões de download
+            const downloadButtonsDiv = document.createElement('div');
+            downloadButtonsDiv.className = 'download-buttons';
+            downloadButtonsDiv.innerHTML = `
+                <button class="btn-small" onclick="downloadClassResults('${className}')">Download CSV (Resultados)</button>
+                <button class="btn-small" onclick="downloadQuestionAccuracy('${className}')">Download CSV (Acerto por Questão)</button>
+            `;
+            classDiv.appendChild(downloadButtonsDiv);
+
+            dashboardContent.appendChild(classDiv);
+        }
+    }
+}
+
+function showStudentAnswers(answersDetailsJson) {
+    const answersDetails = JSON.parse(answersDetailsJson);
+    let detailsHtml = '<h4>Respostas do Aluno:</h4><ul>';
+    answersDetails.forEach(detail => {
+        const status = detail.is_correct ? 'Correta' : 'Incorreta';
+        detailsHtml += `<li><strong>Q${detail.question_id}:</strong> Sua resposta: "${detail.student_answer}" (${status}). Resposta correta: "${detail.correct_answer}"</li>`;
+    });
+    detailsHtml += '</ul>';
+    alert(detailsHtml); // Usar um modal mais sofisticado seria melhor aqui
+}
+
+async function downloadClassResults(className) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/teacher/download/${className}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `resultados_${className}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error("Erro ao baixar resultados da turma:", error);
+        alert("Erro ao baixar resultados. Verifique os logs do servidor.");
+    }
+}
+
+async function downloadQuestionAccuracy(className) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/teacher/download_question_accuracy/${className}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `acerto_por_questao_${className}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error("Erro ao baixar acerto por questão:", error);
+        alert("Erro ao baixar relatório de acerto por questão. Verifique os logs do servidor.");
+    }
+}
+
 
