@@ -26,30 +26,30 @@
                     <select id="student-class" name="class" required>
                         <option value="">Selecione sua turma</option>
                         <optgroup label="E.E. Antônio Carlos">
-                            <option value="1º EM REG 1">1º EM REG 1</option>
-                            <option value="1º EM REG 2">1º EM REG 2</option>
-                            <option value="1º EM REG 3">1º EM REG 3</option>
-                            <option value="1º EM REG 4">1º EM REG 4</option>
-                            <option value="2º EM REG 1">2º EM REG 1</option>
-                            <option value="2º EM REG 2">2º EM REG 2</option>
-                            <option value="2º EM REG 3">2º EM REG 3</option>
-                            <option value="2º EM REG 4">2º EM REG 4</option>
-                            <option value="3º EM REG 1">3º EM REG 1</option>
-                            <option value="3º EM REG 2">3º EM REG 2</option>
-                            <option value="3º EM REG 3">3º EM REG 3</option>
-                            <option value="3º EM REG 4">3º EM REG 4</option>
+                            <option value="E.E. Antônio Carlos - 1º EM REG 1">1º EM REG 1</option>
+                            <option value="E.E. Antônio Carlos - 1º EM REG 2">1º EM REG 2</option>
+                            <option value="E.E. Antônio Carlos - 1º EM REG 3">1º EM REG 3</option>
+                            <option value="E.E. Antônio Carlos - 1º EM REG 4">1º EM REG 4</option>
+                            <option value="E.E. Antônio Carlos - 2º EM REG 1">2º EM REG 1</option>
+                            <option value="E.E. Antônio Carlos - 2º EM REG 2">2º EM REG 2</option>
+                            <option value="E.E. Antônio Carlos - 2º EM REG 3">2º EM REG 3</option>
+                            <option value="E.E. Antônio Carlos - 2º EM REG 4">2º EM REG 4</option>
+                            <option value="E.E. Antônio Carlos - 3º EM REG 1">3º EM REG 1</option>
+                            <option value="E.E. Antônio Carlos - 3º EM REG 2">3º EM REG 2</option>
+                            <option value="E.E. Antônio Carlos - 3º EM REG 3">3º EM REG 3</option>
+                            <option value="E.E. Antônio Carlos - 3º EM REG 4">3º EM REG 4</option>
                         </optgroup>
                         <optgroup label="E.E. José Freire">
-                            <option value="1º EM REG 4">1º EM REG 4</option>
-                            <option value="1º EM EJA 1">1º EM EJA 1</option>
-                            <option value="2º EM REG 1">2º EM REG 1</option>
-                            <option value="2º EM REG 4">2º EM REG 4</option>
-                            <option value="2º EM EJA 1">2º EM EJA 1</option>
-                            <option value="3º EM REG 1">3º EM REG 1</option>
-                            <option value="3º EM REG 2">3º EM REG 2</option>
-                            <option value="3º EM REG 4">3º EM REG 4</option>
-                            <option value="3º EM REG 5">3º EM REG 5</option>
-                            <option value="3º EM EJA 1">3º EM EJA 1</option>
+                            <option value="E.E. José Freire - 1º EM REG 4">1º EM REG 4</option>
+                            <option value="E.E. José Freire - 1º EM EJA 1">1º EM EJA 1</option>
+                            <option value="E.E. José Freire - 2º EM REG 1">2º EM REG 1</option>
+                            <option value="E.E. José Freire - 2º EM REG 4">2º EM REG 4</option>
+                            <option value="E.E. José Freire - 2º EM EJA 1">2º EM EJA 1</option>
+                            <option value="E.E. José Freire - 3º EM REG 1">3º EM REG 1</option>
+                            <option value="E.E. José Freire - 3º EM REG 2">3º EM REG 2</option>
+                            <option value="E.E. José Freire - 3º EM REG 4">3º EM REG 4</option>
+                            <option value="E.E. José Freire - 3º EM REG 5">3º EM REG 5</option>
+                            <option value="E.E. José Freire - 3º EM EJA 1">3º EM EJA 1</option>
                         </optgroup>
                     </select>
                 </div>
@@ -61,6 +61,7 @@
                 
                 <button type="submit" class="btn">Iniciar Quiz</button>
             </form>
+            <button type="button" class="btn-secondary" onclick="showTeacherLogin()">Área do Professor</button>
         </div>
 
         <!-- Página do Quiz -->
@@ -89,7 +90,37 @@
             <p id="score-details">-</p>
             
             <button type="button" class="btn" onclick="restartQuiz()">Fazer Novamente</button>
-        </div>    <script src="js/script.js"></script>
+        </div>
+
+        <!-- Página de Login do Professor -->
+        <div id="teacher-login-page" class="login-container" style="display: none;">
+            <div class="header">
+                <h1>Área do Professor</h1>
+                <p>Acesso restrito</p>
+            </div>
+            <form id="teacher-login-form">
+                <div class="form-group">
+                    <label for="teacher-password">Senha:</label>
+                    <input type="password" id="teacher-password" required>
+                </div>
+                <button type="submit" class="btn">Entrar</button>
+                <button type="button" class="btn-secondary" onclick="showEntryPage()">Voltar</button>
+            </form>
+        </div>
+
+        <!-- Página do Professor -->
+        <div id="teacher-dashboard-page" class="dashboard-container" style="display: none;">
+            <div class="header">
+                <h1>Dashboard do Professor</h1>
+                <p>Resultados dos Alunos e Relatórios</p>
+            </div>
+            <div class="dashboard-content">
+                <div id="results-by-school-class"></div>
+                <button type="button" class="btn-secondary" onclick="showEntryPage()">Sair</button>
+            </div>
+        </div>
+    </div>
+    <script src="js/script.js"></script>
 </body>
 </html>
 
